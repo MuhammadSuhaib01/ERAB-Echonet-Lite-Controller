@@ -1,4 +1,4 @@
-# ECHONET Lite Controller - Quick Reference Guide
+# Echonet Lite Controller - Quick Reference Guide
 
 ## Command Syntax
 

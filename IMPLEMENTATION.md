@@ -73,21 +73,6 @@ Shows:
 - Timeout management (2 seconds per request)
 - Hex encoding/decoding utilities
 
-## Files Modified/Created
-
-### Modified
-
-- **[controller/Cargo.toml](controller/Cargo.toml)** - Updated dependencies (echonet 1.3, hex 0.4, logging)
-- **[controller/src/main.rs](controller/src/main.rs)** - Complete rewrite (500+ lines of production code)
-
-### Created
-
-- **[controller/README.md](controller/README.md)** - Full user guide (200+ lines)
-- **[controller/QUICK_REFERENCE.md](controller/QUICK_REFERENCE.md)** - Command cheat sheet (300+ lines)
-- **[controller/PROTOCOL_GUIDE.md](controller/PROTOCOL_GUIDE.md)** - Protocol documentation (400+ lines)
-- **[controller/examples.sh](controller/examples.sh)** - Bash automation (150+ lines)
-- **[controller/examples.py](controller/examples.py)** - Python integration (400+ lines)
-
 ## Dependencies
 
 All in Cargo.toml:

@@ -1,18 +1,18 @@
 # ECHONET Lite Controller
 
-A comprehensive, interactive ECHONET Lite controller implementation in Rust using the `uecho-rs` library.
+A comprehensive, interactive Echonet Lite controller implementation in Rust using the `uecho-rs` library.
 
 ## Features
 
-✨ **Complete ECHONET Lite Control**
+✨ **Complete Echonet Lite Control**
 
-- 🔍 Device Discovery: Automatically discover ECHONET Lite devices on your network
+- 🔍 Device Discovery: Automatically discover Echonet Lite devices on your network
 - 📋 Device Listing: View all discovered devices with detailed information
-- 📖 Property Reading: Read properties from ECHONET Lite devices
+- 📖 Property Reading: Read properties from Echonet Lite devices
 - ✍️ Property Writing: Write/control device properties
 - 🏢 Manufacturer Information: Display device manufacturer codes and names
 - 📊 Object Information: View all objects and properties in discovered devices
-- ⚙️ Standard Database Integration: Uses ECHONET standard database for human-readable names
+- ⚙️ Standard Database Integration: Uses Echonet standard database for human-readable names
 
 ## Building
 
@@ -33,7 +33,7 @@ docker compose up controller
 Or run it directly in Docker:
 
 ```bash
-docker run -it --network host echonet_controller
+docker run -it --network host Echonet_controller
 ```
 
 ## Usage
@@ -43,7 +43,7 @@ Once started, the controller presents an interactive command-line interface:
 ```
 > help
 Available commands:
-  search              - Search for ECHONET Lite devices on the network
+  search              - Search for Echonet Lite devices on the network
   list                - List all discovered devices and their properties
   read <dev> <obj> <prop> - Read a property from a device
                         dev: device index (1-based)
@@ -72,7 +72,7 @@ Search complete.
 
 ```
 > list
-Discovered ECHONET Lite Devices:
+Discovered Echonet Lite Devices:
 =====================================
 Device [1]: 192.168.1.100 (192.168.1.100:3610) - Panasonic
   Object [0]: 0EF001 - Node Profile Object
@@ -109,7 +109,7 @@ Writing property 80=31 to device 1 object 029101...
 Property write successful
 ```
 
-## ECHONET Lite Basics
+## Echonet Lite Basics
 
 ### Object Code Format
 
@@ -141,7 +141,7 @@ Property codes are 2-digit hexadecimal values:
 
 ```
 ┌─────────────────────────────────────────┐
-│    ECHONET Lite Controller (Rust)       │
+│    Echonet Lite Controller (Rust)       │
 │                                         │
 │  ┌──────────────────────────────────┐  │
 │  │  Interactive CLI Interface       │  │
@@ -159,7 +159,7 @@ Property codes are 2-digit hexadecimal values:
 │  └──────────────────────────────────┘  │
 │               ↓                         │
 │  ┌──────────────────────────────────┐  │
-│  │  ECHONET Lite Protocol           │  │
+│  │  Echonet Lite Protocol           │  │
 │  │  • UDP Multicast Discovery       │  │
 │  │  • Unicast Message Exchange      │  │
 │  └──────────────────────────────────┘  │
@@ -172,7 +172,7 @@ Property codes are 2-digit hexadecimal values:
 
 ## Dependencies
 
-- `echonet` - ECHONET Lite protocol library
+- `Echonet` - Echonet Lite protocol library
 - `log` - Logging framework
 - `env_logger` - Environment-based logger configuration
 - `hex` - Hex encoding/decoding utilities
@@ -182,7 +182,7 @@ Property codes are 2-digit hexadecimal values:
 ### Device Discovery Flow
 
 1. Controller starts and binds to local network interfaces
-2. `search` command sends ECHONET SSDP discovery requests
+2. `search` command sends Echonet SSDP discovery requests
 3. Devices respond with their node profile information
 4. Controller stores discovered remote nodes
 5. `list` command queries each device for detailed information
@@ -190,7 +190,7 @@ Property codes are 2-digit hexadecimal values:
 ### Property Read Flow
 
 1. Parse command: `read 1 029101 80`
-2. Create ECHONET Message with ESV=ReadRequest
+2. Create Echonet Message with ESV=ReadRequest
 3. Send message to device 1, object 029101, property 80
 4. Wait for response (timeout: 2 seconds)
 5. Parse and display property value in hexadecimal
@@ -198,7 +198,7 @@ Property codes are 2-digit hexadecimal values:
 ### Property Write Flow
 
 1. Parse command: `write 1 029101 80 30`
-2. Create ECHONET Message with ESV=WriteRequest
+2. Create Echonet Message with ESV=WriteRequest
 3. Set property data to hex value (30)
 4. Send message to device 1, object 029101
 5. Wait for acknowledgment
@@ -216,7 +216,7 @@ Property codes are 2-digit hexadecimal values:
 Set the log level via environment variable:
 
 ```bash
-docker run -it --network host -e RUST_LOG=debug echonet_controller
+docker run -it --network host -e RUST_LOG=debug Echonet_controller
 ```
 
 Supported levels: `trace`, `debug`, `info`, `warn`, `error`
@@ -226,7 +226,7 @@ Supported levels: `trace`, `debug`, `info`, `warn`, `error`
 ### No Devices Found
 
 1. Ensure devices are powered on and connected to the network
-2. Check that devices support ECHONET Lite protocol
+2. Check that devices support Echonet Lite protocol
 3. Verify network connectivity with controller
 4. Try searching again with `search`
 
@@ -235,7 +235,7 @@ Supported levels: `trace`, `debug`, `info`, `warn`, `error`
 1. Device may not be responding
 2. Check device is still on network with `list`
 3. Try reading a different property
-4. Check ECHONET object and property codes are correct
+4. Check Echonet object and property codes are correct
 
 ### Connection Refused
 
@@ -246,8 +246,8 @@ Supported levels: `trace`, `debug`, `info`, `warn`, `error`
 ## Related Resources
 
 - [uecho-rs GitHub](https://github.com/cybergarage/uecho-rs)
-- [ECHONET Consortium](https://echonet.jp/english/)
-- [ECHONET Specification](https://echonet.jp/spec_mra_rp1_en/)
+- [Echonet Consortium](https://Echonet.jp/english/)
+- [Echonet Specification](https://Echonet.jp/spec_mra_rp1_en/)
 
 ## License
 
