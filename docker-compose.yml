@@ -6,9 +6,10 @@ services:
       context: .
       dockerfile: controller.dockerfile
     container_name: echonet_controller
-    network_mode: host
     stdin_open: true
     tty: true
+    networks:
+      - echonet
     environment:
       - RUST_LOG=debug
 
@@ -17,6 +18,11 @@ services:
       context: .
       dockerfile: monolight.dockerfile
     container_name: echonet_monolight
-    network_mode: host
+    networks:
+      - echonet
     environment:
       - RUST_LOG=debug
+
+networks:
+  echonet:
+    driver: bridge

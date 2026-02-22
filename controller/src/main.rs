@@ -3,8 +3,6 @@ use echonet::protocol::{ESV, Message, Property};
 use echonet::util::Bytes;
 use echonet::{Controller, StandardDatabase};
 use std::io::{self, Write};
-use std::net::IpAddr;
-use std::str::FromStr;
 use std::thread;
 use std::time::Duration;
 
@@ -46,19 +44,18 @@ fn print_devices(controller: &mut Controller) {
         prop.set_code(0x8A); // Manufacturer code
         msg.add_property(prop);
 
-        if let Ok(res_msg) = controller.post_message(&node, &mut msg) {
-            match res_msg.recv_timeout(Duration::from_secs(1)) {
-                Ok(response) => {
-                    let props = response.properties();
-                    if !props.is_empty() {
-                        let manufacture_code = Bytes::to_u32(props[0].data()) as u32;
-                        if let Some(mfg) = std_db.find_manufacture(manufacture_code) {
-                            manufacture_name = mfg.name().to_string();
-                        }
+        let rx = controller.post_message(&node, &mut msg);
+        match rx.recv_timeout(Duration::from_secs(1)) {
+            Ok(response) => {
+                let props = response.properties();
+                if !props.is_empty() {
+                    let manufacture_code = Bytes::to_u32(props[0].data()) as u32;
+                    if let Some(mfg) = std_db.find_manufacture(manufacture_code) {
+                        manufacture_name = mfg.name().to_string();
                     }
                 }
-                Err(_) => {}
             }
+            Err(_) => {}
         }
 
         println!(
@@ -112,25 +109,21 @@ fn read_property(controller: &mut Controller, device_idx: usize, obj_code: u32, 
 
     println!("Reading property {:02X} from device {} object {:06X}...", prop_code, device_idx + 1, obj_code);
 
-    match controller.post_message(&node, &mut msg) {
-        Ok(rx) => {
-            match rx.recv_timeout(Duration::from_secs(2)) {
-                Ok(response) => {
-                    let props = response.properties();
-                    if !props.is_empty() {
-                        println!(
-                            "Property {:02X}: {}",
-                            props[0].code(),
-                            hex::encode(props[0].data())
-                        );
-                    } else {
-                        println!("No property data received");
-                    }
-                }
-                Err(_) => println!("Timeout: No response from device"),
+    let rx = controller.post_message(&node, &mut msg);
+    match rx.recv_timeout(Duration::from_secs(2)) {
+        Ok(response) => {
+            let props = response.properties();
+            if !props.is_empty() {
+                println!(
+                    "Property {:02X}: {}",
+                    props[0].code(),
+                    hex::encode(props[0].data())
+                );
+            } else {
+                println!("No property data received");
             }
         }
-        Err(_) => println!("Failed to send message"),
+        Err(_) => println!("Timeout: No response from device"),
     }
 }
 
@@ -166,21 +159,17 @@ fn write_property(
         obj_code
     );
 
-    match controller.post_message(&node, &mut msg) {
-        Ok(rx) => {
-            match rx.recv_timeout(Duration::from_secs(2)) {
-                Ok(response) => {
-                    if response.esv() as u8 == 0x71 {
-                        // Write successful
-                        println!("Property write successful");
-                    } else {
-                        println!("Write completed with ESV: {:02X}", response.esv() as u8);
-                    }
-                }
-                Err(_) => println!("Timeout: No response from device"),
+    let rx = controller.post_message(&node, &mut msg);
+    match rx.recv_timeout(Duration::from_secs(2)) {
+        Ok(response) => {
+            if response.esv() as u8 == 0x71 {
+                // Write successful
+                println!("Property write successful");
+            } else {
+                println!("Write completed with ESV: {:02X}", response.esv() as u8);
             }
         }
-        Err(_) => println!("Failed to send message"),
+        Err(_) => println!("Timeout: No response from device"),
     }
 }
 
@@ -202,11 +191,10 @@ fn print_help() {
 }
 
 fn main() {
-    env_logger::builder().filter_level(log::LevelFilter::Warn).init();
-    Logger::init();
+    let _ = env_logger::builder().filter_level(log::LevelFilter::Warn).try_init();
 
     println!("╔════════════════════════════════════════════════════════╗");
-    println!("║     ECHONET Lite Controller - uecho-rs powered          ║");
+    println!("║     ECHONET Lite Controller - uecho-rs powered         ║");
     println!("╚════════════════════════════════════════════════════════╝\n");
 
     match get_local_ip() {
