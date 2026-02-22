@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  controller:
+    build:
+      context: .
+      dockerfile: controller.dockerfile
+    container_name: echonet_controller
+    network_mode: host
+    stdin_open: true
+    tty: true
+    environment:
+      - RUST_LOG=debug
+
+  monolight:
+    build:
+      context: .
+      dockerfile: monolight.dockerfile
+    container_name: echonet_monolight
+    network_mode: host
+    environment:
+      - RUST_LOG=debug

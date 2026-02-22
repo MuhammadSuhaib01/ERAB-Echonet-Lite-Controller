@@ -1,0 +1,8 @@
+[package]
+name = "monolight"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+echonet = "1.3"
+signal-hook = "0.3"
