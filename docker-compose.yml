@@ -23,6 +23,21 @@ services:
     environment:
       - RUST_LOG=debug
 
+  ssng:
+    build:
+      context: .
+      dockerfile: ssng.dockerfile
+    container_name: echonet_ssng
+    ports:
+      - "3000:3000"
+      - "8080:8080"
+    networks:
+      - echonet
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./ssng-node2/log:/app/log
+
 networks:
   echonet:
     driver: bridge

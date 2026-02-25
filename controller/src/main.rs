@@ -173,6 +173,67 @@ fn write_property(
     }
 }
 
+fn handle_request(message: &Message) -> Option<Message> {
+    println!(
+        "\n[REQUEST] Received message - ESV: {:02X}, Object: {:06X}",
+        message.esv() as u8,
+        message.deoj()
+    );
+
+    // Get the ESV type to determine the request type
+    let esv = message.esv();
+    
+    match esv {
+        ESV::ReadRequest => {
+            println!("  Type: READ REQUEST");
+            for prop in message.properties() {
+                println!("    Property {:02X} requested", prop.code());
+            }
+        }
+        ESV::WriteRequest => {
+            println!("  Type: WRITE REQUEST");
+            for prop in message.properties() {
+                println!(
+                    "    Property {:02X} = {}",
+                    prop.code(),
+                    hex::encode(prop.data())
+                );
+            }
+        }
+        _ => {
+            println!("  Type: Other ESV ({:02X})", esv as u8);
+        }
+    }
+
+    // Generate appropriate response
+    let mut response = Message::new();
+    
+    match esv {
+        ESV::ReadRequest => {
+            response.set_esv(ESV::ReadResponse);
+        }
+        ESV::WriteRequest => {
+            response.set_esv(ESV::WriteResponse);
+        }
+        _ => {
+            return None;
+        }
+    }
+
+    response.set_seoj(message.deoj());
+    response.set_deoj(message.seoj());
+    
+    // Copy requested properties from the request to the response
+    for prop in message.properties() {
+        let mut resp_prop = Property::new();
+        resp_prop.set_code(prop.code());
+        resp_prop.set_data(prop.data().to_vec());
+        response.add_property(resp_prop);
+    }
+
+    Some(response)
+}
+
 fn print_help() {
     println!("\nAvailable commands:");
     println!("  search              - Search for ECHONET Lite devices on the network");
@@ -204,12 +265,16 @@ fn main() {
 
     let mut controller = Controller::new();
 
+    // Set request handler to receive and process incoming messages
+    controller.set_request_handler(|msg| handle_request(msg));
+
     if !controller.start() {
         eprintln!("Failed to start controller");
         return;
     }
 
     println!("Controller started successfully");
+    println!("Listening for incoming requests...");
     println!("Type 'help' for available commands\n");
 
     loop {
