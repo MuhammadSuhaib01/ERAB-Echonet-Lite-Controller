@@ -1,0 +1,21 @@
+[Unit]
+Description=Echonet Lite ERAB Controller Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Change this to your Raspberry Pi's username if it's not 'pi'
+User=pi
+# The directory where the binary and targets.json will live
+WorkingDirectory=/opt/echonet-controller
+# The command to start the controller
+ExecStart=/opt/echonet-controller/controller
+# Automatically restart if it crashes
+Restart=always
+RestartSec=5
+# Set logging level
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=multi-user.target

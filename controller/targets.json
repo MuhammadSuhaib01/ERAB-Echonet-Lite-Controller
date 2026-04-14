@@ -1,0 +1,61 @@
+
+{
+  "devices": [
+    {
+      "ip": "172.16.18.51",
+      "name": "EC Sharp AC",
+      "eoj": "013001",
+      "device_type": "AirConditioner",
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    },
+    {
+      "ip": "172.16.18.52",
+      "name": "EC Mitsubishi AC",
+      "eoj": "013001",
+      "device_type": "AirConditioner",
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    },
+    {
+      "ip": "172.16.18.53",
+      "name": "EC Daikin AC",
+      "eoj": "013001",
+      "device_type": "AirConditioner",
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    },
+    {
+      "ip": "172.16.18.117",
+      "name": "EC Sharp Air Purifier",
+      "eoj": "013501",
+      "device_type": { "Other": "AirPurifier" },
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    },
+    {
+      "ip": "172.16.18.54",
+      "name": "EC Light 1",
+      "eoj": "029001",
+      "device_type": "Lighting",
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    },
+    {
+      "ip": "172.16.18.54",
+      "name": "EC Light 2",
+      "eoj": "029002",
+      "device_type": "Lighting",
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    },
+    {
+      "ip": "172.16.18.54",
+      "name": "EC Light 3",
+      "eoj": "029003",
+      "device_type": "Lighting",
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    },
+    {
+      "ip": "172.16.18.54",
+      "name": "EC Light 4",
+      "eoj": "029004",
+      "device_type": "Lighting",
+      "properties": { "power_status": null, "set_temp": null, "room_temp": null }
+    }
+  ]
+}
