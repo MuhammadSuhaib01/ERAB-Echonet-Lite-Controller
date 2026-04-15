@@ -18,11 +18,11 @@ fn print_separator(width: usize) {
     println!("{}", "=".repeat(width));
 }
 
-fn print_devices(controller: &mut Controller) {
+fn print_devices(controller: &mut Controller, targets: &targets::Targets) {
     let nodes = controller.nodes();
 
     if nodes.is_empty() {
-        println!("No devices found.");
+        println!("No devices found (you may need to run 'search' first).");
         return;
     }
 
@@ -35,6 +35,7 @@ fn print_devices(controller: &mut Controller) {
         let node_addr = node.addr();
         let ip = node_addr.ip();
         let port = node_addr.port();
+        let ip_str = ip.to_string();
 
         // Attempt to get manufacturer code
         let mut manufacture_name = String::from("Unknown");
@@ -58,21 +59,42 @@ fn print_devices(controller: &mut Controller) {
             }
             Err(_) => {}
         }
+        
+        let primary_name = targets.devices.iter()
+            .find(|d| d.ip == ip_str)
+            .map(|d| d.name.clone())
+            .unwrap_or_else(|| ip_str.clone());
 
         println!(
             "Device [{}]: {} ({}:{}) - {}",
             i + 1,
-            ip,
+            primary_name,
             ip,
             port,
             manufacture_name
         );
 
+        // Fetch properties map from the node to force it to populate its objects
+        let mut map_msg = Message::new();
+        map_msg.set_esv(ESV::ReadRequest);
+        map_msg.set_deoj(0x0EF001);
+        let mut map_prop = Property::new();
+        map_prop.set_code(0x9F); // Get property map
+        map_msg.add_property(map_prop);
+        let _ = controller.post_message(&node, &mut map_msg).recv_timeout(Duration::from_secs(1));
+        
         // Print objects in the node
         for (j, obj) in node.objects().iter().enumerate() {
             let obj_code = obj.code();
             let class_name = obj.class_name();
-            println!("  Object [{}]: {:06X} - {}", j, obj_code, class_name);
+            
+            let eoj_hex = format!("{:06X}", obj_code);
+            let obj_target_name = targets.devices.iter()
+                .find(|d| d.ip == ip_str && d.eoj == eoj_hex)
+                .map(|d| d.name.clone())
+                .unwrap_or_else(|| class_name.to_string());
+                
+            println!("  Object [{}]: {:06X} - {}", j, obj_code, obj_target_name);
 
             // Print mandatory properties for the object
             for prop_def in obj.properties() {
@@ -91,15 +113,16 @@ fn print_devices(controller: &mut Controller) {
     print_separator(100);
 }
 
-fn read_property(controller: &mut Controller, device_idx: usize, obj_code: u32, prop_code: u8) {
+fn read_property(controller: &mut Controller, ip_str: &str, obj_code: u32, prop_code: u8) {
     let nodes = controller.nodes();
 
-    if device_idx >= nodes.len() {
-        println!("Invalid device index");
-        return;
-    }
-
-    let node = &nodes[device_idx];
+    let node = match nodes.iter().find(|n| n.addr().ip().to_string() == ip_str) {
+        Some(n) => n,
+        None => {
+            println!("Device with IP {} not found (try running 'search' first)", ip_str);
+            return;
+        }
+    };
 
     let mut msg = Message::new();
     msg.set_esv(ESV::ReadRequest);
@@ -108,7 +131,7 @@ fn read_property(controller: &mut Controller, device_idx: usize, obj_code: u32, 
     prop.set_code(prop_code);
     msg.add_property(prop);
 
-    println!("Reading property {:02X} from device {} object {:06X}...", prop_code, device_idx + 1, obj_code);
+    println!("Reading property {:02X} from device {} object {:06X}...", prop_code, ip_str, obj_code);
 
     let rx = controller.post_message(&node, &mut msg);
     match rx.recv_timeout(Duration::from_secs(2)) {
@@ -130,22 +153,23 @@ fn read_property(controller: &mut Controller, device_idx: usize, obj_code: u32, 
 
 fn write_property(
     controller: &mut Controller,
-    device_idx: usize,
+    ip_str: &str,
     obj_code: u32,
     prop_code: u8,
     data: &[u8],
 ) {
     let nodes = controller.nodes();
 
-    if device_idx >= nodes.len() {
-        println!("Invalid device index");
-        return;
-    }
-
-    let node = &nodes[device_idx];
+    let node = match nodes.iter().find(|n| n.addr().ip().to_string() == ip_str) {
+        Some(n) => n,
+        None => {
+            println!("Device with IP {} not found (try running 'search' first)", ip_str);
+            return;
+        }
+    };
 
     let mut msg = Message::new();
-    msg.set_esv(ESV::WriteRequest);
+    msg.set_esv(ESV::WriteRequest); // Use SetI (0x60) - Fire and forget, fixes hardware timeout loops
     msg.set_deoj(obj_code);
     let mut prop = Property::new();
     prop.set_code(prop_code);
@@ -153,37 +177,31 @@ fn write_property(
     msg.add_property(prop);
 
     println!(
-        "Writing property {:02X}={} to device {} object {:06X}...",
+        "Sending write command {:02X}={} to device {} object {:06X}...",
         prop_code,
         hex::encode(data),
-        device_idx + 1,
+        ip_str,
         obj_code
     );
 
-    let rx = controller.post_message(&node, &mut msg);
-    match rx.recv_timeout(Duration::from_secs(2)) {
-        Ok(response) => {
-            if response.esv() as u8 == 0x71 {
-                // Write successful
-                println!("Property write successful");
-            } else {
-                println!("Write completed with ESV: {:02X}", response.esv() as u8);
-            }
-        }
-        Err(_) => println!("Timeout: No response from device"),
-    }
+    // Send without blocking the channel to avoid freezing physical controller queues
+    let _ = controller.post_message(&node, &mut msg);
+    println!("Command dispatched to network.");
+    
+    // Give the bridge hardware 200ms to process the physical actuation
+    thread::sleep(Duration::from_millis(200));
 }
 
 fn print_help() {
     println!("\nAvailable commands:");
     println!("  search              - Search for ECHONET Lite devices on the network");
     println!("  list                - List all discovered devices and their properties");
-    println!("  read <dev> <obj> <prop> - Read a property from a device");
-    println!("                        dev: device index (1-based)");
+    println!("  read <ip> <obj> <prop> - Read a property from a device");
+    println!("                        ip: device IP address (e.g., 172.16.18.51)");
     println!("                        obj: object code in hex (e.g., 029101)");
     println!("                        prop: property code in hex (e.g., 80)");
-    println!("  write <dev> <obj> <prop> <data> - Write a property value");
-    println!("                        dev: device index (1-based)");
+    println!("  write <ip> <obj> <prop> <data> - Write a property value");
+    println!("                        ip: device IP address (e.g., 172.16.18.51)");
     println!("                        obj: object code in hex");
     println!("                        prop: property code in hex");
     println!("                        data: hex data (e.g., 30)");
@@ -241,49 +259,51 @@ fn main() {
                 println!("Search complete.\n");
             }
             "list" => {
-                print_devices(&mut controller);
+                if controller.nodes().len() <= 1 {
+                    println!("No external devices known yet. Performing automatic search...");
+                    controller.search();
+                    thread::sleep(Duration::from_secs(3));
+                    println!("Search complete.\n");
+                }
+                
+                let loaded_targets = targets::Targets::load_from_file("targets.json").unwrap_or_default();
+                print_devices(&mut controller, &loaded_targets);
             }
             "read" => {
                 if parts.len() < 4 {
-                    println!("Usage: read <device_index> <object_code_hex> <property_code_hex>");
-                    println!("Example: read 1 029101 80");
+                    println!("Usage: read <ip> <object_code_hex> <property_code_hex>");
+                    println!("Example: read 172.16.18.51 013001 80");
                 } else {
-                    if let Ok(dev_idx) = parts[1].parse::<usize>() {
-                        if let Ok(obj_code) = u32::from_str_radix(parts[2], 16) {
-                            if let Ok(prop_code) = u8::from_str_radix(parts[3], 16) {
-                                read_property(&mut controller, dev_idx - 1, obj_code, prop_code);
-                            } else {
-                                println!("Invalid property code (must be hex)");
-                            }
+                    let ip_str = parts[1];
+                    if let Ok(obj_code) = u32::from_str_radix(parts[2], 16) {
+                        if let Ok(prop_code) = u8::from_str_radix(parts[3], 16) {
+                            read_property(&mut controller, ip_str, obj_code, prop_code);
                         } else {
-                            println!("Invalid object code (must be hex)");
+                            println!("Invalid property code (must be hex)");
                         }
                     } else {
-                        println!("Invalid device index (must be numeric)");
+                        println!("Invalid object code (must be hex)");
                     }
                 }
             }
             "write" => {
                 if parts.len() < 5 {
-                    println!("Usage: write <device_index> <object_code_hex> <property_code_hex> <data_hex>");
-                    println!("Example: write 1 029101 80 30");
+                    println!("Usage: write <ip> <object_code_hex> <property_code_hex> <data_hex>");
+                    println!("Example: write 172.16.18.51 013001 80 30");
                 } else {
-                    if let Ok(dev_idx) = parts[1].parse::<usize>() {
-                        if let Ok(obj_code) = u32::from_str_radix(parts[2], 16) {
-                            if let Ok(prop_code) = u8::from_str_radix(parts[3], 16) {
-                                if let Ok(data) = hex::decode(parts[4]) {
-                                    write_property(&mut controller, dev_idx - 1, obj_code, prop_code, &data);
-                                } else {
-                                    println!("Invalid hex data");
-                                }
+                    let ip_str = parts[1];
+                    if let Ok(obj_code) = u32::from_str_radix(parts[2], 16) {
+                        if let Ok(prop_code) = u8::from_str_radix(parts[3], 16) {
+                            if let Ok(data) = hex::decode(parts[4]) {
+                                write_property(&mut controller, ip_str, obj_code, prop_code, &data);
                             } else {
-                                println!("Invalid property code (must be hex)");
+                                println!("Invalid hex data");
                             }
                         } else {
-                            println!("Invalid object code (must be hex)");
+                            println!("Invalid property code (must be hex)");
                         }
                     } else {
-                        println!("Invalid device index (must be numeric)");
+                        println!("Invalid object code (must be hex)");
                     }
                 }
             }
